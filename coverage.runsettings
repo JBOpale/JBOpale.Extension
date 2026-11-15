@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Réglages communs de couverture (coverlet, format Cobertura), utilisés par pr-tests.yml
+     et en local (options collect "XPlat Code Coverage" et settings coverage.runsettings de dotnet test, voir CLAUDE.md).
+     Ne pas exclure CompilerGeneratedAttribute ni baisser la mesure (voir l'en-tête de pr-tests.yml). -->
+<RunSettings>
+  <DataCollectionRunSettings>
+    <DataCollectors>
+      <DataCollector friendlyName="XPlat code coverage">
+        <Configuration>
+          <Format>cobertura</Format>
+          <Include>[JBOpale.Extensions]*</Include>
+          <ExcludeByFile>**/obj/**</ExcludeByFile>
+          <SingleHit>false</SingleHit>
+          <IncludeTestAssembly>false</IncludeTestAssembly>
+        </Configuration>
+      </DataCollector>
+    </DataCollectors>
+  </DataCollectionRunSettings>
+</RunSettings>
