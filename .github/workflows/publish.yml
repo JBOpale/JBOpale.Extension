@@ -8,7 +8,13 @@ on:
 jobs:
   # La publication est bloquée tant que tous les tests ne passent pas, sur net48, net8.0 et net10.0.
   test:
+    name: JBOpale.Extensions - Tests avant publication
     runs-on: [self-hosted, Windows, SURFACE-BOOK-3]
+
+    # Runner Windows : bash pointe sur un WSL vide, toutes les étapes sont en PowerShell.
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout
@@ -25,8 +31,14 @@ jobs:
         run: dotnet test JBOpale.Extensions.sln --configuration Release
 
   publish:
+    name: JBOpale.Extensions - Publication NuGet
     needs: test
     runs-on: [self-hosted, Windows, SURFACE-BOOK-3]
+
+    # Runner Windows : bash pointe sur un WSL vide, toutes les étapes sont en PowerShell.
+    defaults:
+      run:
+        shell: pwsh
     permissions:
       contents: write
       packages: write

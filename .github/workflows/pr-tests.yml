@@ -1,0 +1,80 @@
+name: Tests PR
+
+# Check requis par les rulesets (.github/rulesets/) : « JBOpale.Extensions - Tests PR ».
+#
+# Règle : couverture de code (choix explicite de Jérôme, 15/11/2026)
+#   - au moins 90 % des lignes couvrables ajoutées ou modifiées par chaque PR doivent être couvertes par les tests ;
+#   - la couverture globale des lignes ne doit jamais baisser sous lineCoverage de tests/coverage-baseline.json
+#     (à relever quand la mesure progresse, jamais à baisser) ;
+#   - contrôlé par .github/scripts/Test-Coverage.ps1 (étape « Couverture » ci-dessous, partie du check requis) ;
+#   - ne jamais exclure de code de la mesure, baisser le seuil ou la référence, ni désactiver l'étape pour faire passer une PR :
+#     écrire les tests manquants.
+#
+# Ne JAMAIS ajouter de filtre paths ni de condition qui ferait sauter le job :
+# un check requis sauté compte comme réussi, un check absent bloque la PR.
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests-pr:
+    name: JBOpale.Extensions - Tests PR
+    # Dépôt public : le code d'une PR venant d'un fork ne doit jamais s'exécuter sur le runner self-hosted.
+    # Ces PR sont envoyées sur ubuntu-latest où la première étape échoue (le job n'est pas sauté).
+    # Les autres runs utilisent le runner Windows (net48 exige Windows).
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted","Windows","SURFACE-BOOK-3"]') }}
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Refuser les PR venant d'un fork
+        run: |
+          if ("${{ github.event_name }}" -eq "pull_request" -and "${{ github.event.pull_request.head.repo.full_name }}" -ne "${{ github.repository }}") {
+            Write-Error "PR venant d'un fork : les tests ne sont pas exécutés sur le runner self-hosted. Un mainteneur doit reprendre la branche dans le dépôt."
+            exit 1
+          }
+          Write-Host "PR interne : exécution des tests."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Historique complet : la couverture du code modifié compare HEAD à origin/<branche de base>.
+          fetch-depth: 0
+
+      - name: Installer les SDK .NET 8 et 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restauration
+        run: dotnet restore JBOpale.Extensions.sln
+
+      # Fait partie du check requis : échec sur toute vulnérabilité HAUTE ou CRITIQUE (directe ou transitive),
+      # avertissement pour faible / modérée. Ne jamais baisser le seuil ni retirer cette étape (voir CLAUDE.md).
+      - name: Paquets vulnérables (haute / critique)
+        run: ./.github/scripts/paquets-vulnerables.ps1 -Solution JBOpale.Extensions.sln
+
+      - name: Compilation (net48, net8.0 et net10.0)
+        run: dotnet build JBOpale.Extensions.sln --configuration Release --no-restore
+
+      - name: Tests UnitTest_Extensions (net48, net8.0 et net10.0)
+        run: dotnet test UnitTest_Extensions/UnitTest_Extensions.csproj --configuration Release --no-build --collect "XPlat Code Coverage" --settings coverage.runsettings --results-directory TestResults
+
+      # Partie du check requis. Exécutée même si les tests ont échoué (rapport de couverture utile au diagnostic).
+      - name: Couverture (90 % du code modifié, global au moins au seuil)
+        if: ${{ !cancelled() }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          $base = ""
+          if ($env:BASE_REF) { $base = "origin/$($env:BASE_REF)" }
+          ./.github/scripts/Test-Coverage.ps1 -ReportsPath TestResults -BaseRef $base -BaselineFile tests/coverage-baseline.json -Threshold 90

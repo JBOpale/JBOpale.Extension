@@ -1,0 +1,4 @@
+{
+  "lineCoverage": 41,
+  "note": "Couverture globale des lignes de JBOpale.Extensions (%) en dessous de laquelle le check « JBOpale.Extensions - Tests PR » échoue. Ne jamais la baisser. Mesure du 1er run Windows (15/11/2026, net48 + net8.0 + net10.0) : 41,87 % (193 / 461 lignes), arrondie à l'inférieur. À relever à chaque ::notice:: du check."
+}
