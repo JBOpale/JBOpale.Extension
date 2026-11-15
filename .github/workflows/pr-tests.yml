@@ -46,6 +46,11 @@ jobs:
       - name: Restauration
         run: dotnet restore JBOpale.Extensions.sln
 
+      # Fait partie du check requis : échec sur toute vulnérabilité HAUTE ou CRITIQUE (directe ou transitive),
+      # avertissement pour faible / modérée. Ne jamais baisser le seuil ni retirer cette étape (voir CLAUDE.md).
+      - name: Paquets vulnérables (haute / critique)
+        run: ./.github/scripts/paquets-vulnerables.ps1 -Solution JBOpale.Extensions.sln
+
       - name: Compilation (net48, net8.0 et net10.0)
         run: dotnet build JBOpale.Extensions.sln --configuration Release --no-restore
 
