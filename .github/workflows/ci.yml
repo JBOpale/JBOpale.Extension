@@ -8,7 +8,13 @@ on:
 
 jobs:
   test:
+    name: JBOpale.Extensions - Tests (push main)
     runs-on: [self-hosted, Windows, SURFACE-BOOK-3]
+
+    # Runner Windows : bash pointe sur un WSL vide, toutes les étapes sont en PowerShell.
+    defaults:
+      run:
+        shell: pwsh
 
     steps:
       - name: Checkout
