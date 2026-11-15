@@ -1,0 +1,53 @@
+name: Tests PR
+
+# Check requis par les rulesets (.github/rulesets/) : « JBOpale.Extensions - Tests PR ».
+# Ne JAMAIS ajouter de filtre paths ni de condition qui ferait sauter le job :
+# un check requis sauté compte comme réussi, un check absent bloque la PR.
+on:
+  pull_request:
+    branches: [dev, main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  tests-pr:
+    name: JBOpale.Extensions - Tests PR
+    # Dépôt public : le code d'une PR venant d'un fork ne doit jamais s'exécuter sur le runner self-hosted.
+    # Ces PR sont envoyées sur ubuntu-latest où la première étape échoue (le job n'est pas sauté).
+    # Les autres runs utilisent le runner Windows (net48 exige Windows).
+    runs-on: ${{ (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) && 'ubuntu-latest' || fromJSON('["self-hosted","Windows","SURFACE-BOOK-3"]') }}
+
+    defaults:
+      run:
+        shell: pwsh
+
+    steps:
+      - name: Refuser les PR venant d'un fork
+        run: |
+          if ("${{ github.event_name }}" -eq "pull_request" -and "${{ github.event.pull_request.head.repo.full_name }}" -ne "${{ github.repository }}") {
+            Write-Error "PR venant d'un fork : les tests ne sont pas exécutés sur le runner self-hosted. Un mainteneur doit reprendre la branche dans le dépôt."
+            exit 1
+          }
+          Write-Host "PR interne : exécution des tests."
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Installer les SDK .NET 8 et 10
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: |
+            8.0.x
+            10.0.x
+
+      - name: Restauration
+        run: dotnet restore JBOpale.Extensions.sln
+
+      - name: Compilation (net48, net8.0 et net10.0)
+        run: dotnet build JBOpale.Extensions.sln --configuration Release --no-restore
+
+      - name: Tests UnitTest_Extensions (net48, net8.0 et net10.0)
+        run: dotnet test UnitTest_Extensions/UnitTest_Extensions.csproj --configuration Release --no-build

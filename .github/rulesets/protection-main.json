@@ -34,7 +34,8 @@
         "strict_required_status_checks_policy": false,
         "required_status_checks": [
           {
-            "context": "test"
+            "context": "JBOpale.Extensions - Tests PR",
+            "integration_id": 15368
           }
         ]
       }
