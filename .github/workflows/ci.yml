@@ -3,12 +3,11 @@ name: Tests
 on:
   push:
     branches: [main]
-  pull_request:
+  # Plus de déclencheur pull_request : les tests des PR sont lancés par pr-tests.yml
+  # (check requis « JBOpale.Extensions - Tests PR »), pour éviter les doubles runs.
 
 jobs:
   test:
-    # Runner local : on n'exécute pas le code de pull requests venant de forks.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
     runs-on: [self-hosted, Windows, SURFACE-BOOK-3]
 
     steps:
